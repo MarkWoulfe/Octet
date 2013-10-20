@@ -20,8 +20,6 @@ namespace octet {
     // what color is our box
     vec4 color;
     
-    //test making a change
-    
   public:
     box_4() {
     }
