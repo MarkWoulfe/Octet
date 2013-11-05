@@ -59,17 +59,17 @@ namespace octet {
     }
 
     // begin_ref returns true if we need to recurse.
-    virtual bool begin_ref(void *ref, atom_t sid, atom_t type) = 0;
-    virtual bool begin_ref(void *ref, int index, atom_t type) = 0;
-    virtual bool begin_ref(void *ref, const char *sid, atom_t type) = 0;
-    virtual void end_ref() = 0;
+    virtual bool begin_ref(void *ref, atom_t sid, atom_t type) {}//= 0;
+    virtual bool begin_ref(void *ref, int index, atom_t type){} //= 0;
+    virtual bool begin_ref(void *ref, const char *sid, atom_t type){}// = 0;
+    virtual void end_ref(){}// = 0;
 
     // for arrays and dictionaries
-    virtual bool begin_refs(atom_t sid, int &size, bool is_dict) = 0;
-    virtual void end_refs(bool is_dict) = 0;
+    virtual bool begin_refs(atom_t sid, int &size, bool is_dict){}// = 0;
+    virtual void end_refs(bool is_dict){}// = 0;
 
     // for "blobs" binary large objects
-    virtual void visit_bin(void *value, size_t size, atom_t sid, atom_t type) = 0;
+    virtual void visit_bin(void *value, size_t size, atom_t sid, atom_t type){}// = 0;
     virtual void visit_string(string &value, atom_t sid) {}
 
     // when loading, we use these functions as well

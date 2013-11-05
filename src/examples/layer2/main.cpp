@@ -19,7 +19,7 @@
 int main(int argc, char **argv) {
   //octet::unit_test_ray();
 
-  octet::app_utils::prefix("../../");
+  octet::app_utils::prefix("../");
   octet::app::init_all(argc, argv);
   octet::engine app(argc, argv);
   app.init();

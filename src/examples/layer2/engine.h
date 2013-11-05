@@ -106,7 +106,7 @@ namespace octet {
 
       const char *filename = 0;
 
-      int selector = 0;
+      int selector = 2;
       switch (selector) {
         case 0: filename = "assets/duck_triangulate.dae"; break;
         case 1: filename = "assets/skinning/skin_unrot.dae"; break;

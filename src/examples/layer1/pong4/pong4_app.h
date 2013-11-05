@@ -7,6 +7,24 @@
 //
 
 namespace octet {
+  
+  class powerUp{
+  protected:
+    //private varaibales to only be used by this and child classes
+  public:
+    powerUp();
+  };
+  
+  class speedPowerUp : public powerUp{
+  public:
+    speedPowerUp();
+  };
+
+  class sizePowerUp : public powerUp{
+  public:
+    sizePowerUp();
+  };
+  
   class box_4 {
     // where is our box (overkill for a ping game!)
     mat4t modelToWorld;
