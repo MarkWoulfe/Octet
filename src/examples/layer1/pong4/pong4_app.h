@@ -18,7 +18,7 @@ namespace octet {
     
     // half the height of the box
     float halfHeight;
-
+    
     // what color is our box
     vec4 color;
     
@@ -109,17 +109,23 @@ namespace octet {
   
   class powerUp : public box_4{
   protected:
-    //private varaibales to only be used by this and child classes
+    bool powerUpVisible = false;
   public:
     powerUp(){
     }
     
-    virtual float effect(float effect){
-      return effect;
+    bool isPowerUpVisible(){
+      return powerUpVisible;
     }
     
-    virtual ~powerUp(){
-      
+    bool setPowerUpVisible(bool yes){
+      if(yes)powerUpVisible = true;
+      else powerUpVisible = false;
+      return powerUpVisible;
+    }
+    
+    virtual float effect(float effect){
+      return effect;
     }
     
   };
@@ -131,13 +137,9 @@ namespace octet {
     
     float effect(float velocity){
       
-      float increasedVelocity = velocity*1.5;
+      float increasedVelocity = velocity*1.75;
       
       return increasedVelocity;
-    }
-    
-    virtual ~speedPowerUp(){
-      
     }
     
   };
@@ -149,32 +151,14 @@ namespace octet {
     
     float effect(float velocity){
       
-      float decreasedVelocity = velocity*0.5;
+      float decreasedVelocity = velocity*0.75;
       
       return decreasedVelocity;
-    }
-    
-    virtual ~speedDownPowerUp(){
-      
     }
     
   };
   
   ////////////////////ADDED CODE////////////////////
-  
-  /*class sizePowerUp : public powerUp{
-  public:
-    sizePowerUp(){
-    }
-    
-    float effect(float size){
-    
-      float sizeIncreased = size*1.5;
-      
-      return sizeIncreased;
-    }
-    
-  };*/
   
   class pong4_app : public octet::app {
     
@@ -199,12 +183,16 @@ namespace octet {
     
     // game objects
     
+    ////////////////////ADDED CODE////////////////////
+    
     static const int powerUpArraySize = 2;
     
     speedPowerUp * speedUp = new speedPowerUp;
     speedDownPowerUp * speedDown = new speedDownPowerUp;
     
     powerUp * powerUps[powerUpArraySize] = {speedUp, speedDown};
+    
+    ////////////////////ADDED CODE////////////////////
     
     // court components
     box_4 court[4];
@@ -219,10 +207,17 @@ namespace octet {
     float ball_velocity_x;
     float ball_velocity_y;
     
+    ////////////////////ADDED CODE////////////////////
+    //code for keeping track of how much the bats have shrunk
+    float topScaleValue = 0.f;
+    float bottomScaleValue = 0.f;
+    
     //boolean for enemy movement
     bool move_right = true;
     bool move_left = true;
     bool left_or_right;
+    
+    ////////////////////ADDED CODE////////////////////
     
     // move the objects before drawing and do collision detection on the court
     void simulate() {
@@ -292,7 +287,7 @@ namespace octet {
           ball_velocity_y = 0.10f;
         }
         
-      ////////////////////ADDED CODE////////////////////
+        ////////////////////ADDED CODE////////////////////
         
       } else if (state == state_playing) {
         
@@ -312,10 +307,18 @@ namespace octet {
         //check collision with bats on top and bottom as long as they exist
         if (ball_velocity_y > 0 && ball.collides_with(bat[2]) && bat[2].getWidth() > 0) {
             ball_velocity_y = -ball_velocity_y;
-            bat[2].scale(-0.5,0);
+          if(powerUps[0]->isPowerUpVisible() == false){
+              powerUps[0]->setPowerUpVisible(true);
+              bat[2].scale(-0.5f,0);
+              topScaleValue+=0.5f;
+          }
         } else if (ball_velocity_y < 0 && ball.collides_with(bat[3]) && bat[3].getWidth() > 0) {
             ball_velocity_y = -ball_velocity_y;
-            bat[3].scale(-0.5,0);
+          if(powerUps[1]->isPowerUpVisible() == false){
+              powerUps[1]->setPowerUpVisible(true);
+              bat[3].scale(-0.5f,0);
+              bottomScaleValue+=0.5f;
+          }
         }
         
         ////////////////////ADDED CODE////////////////////
@@ -330,19 +333,19 @@ namespace octet {
         // check collision with the court end zones
         if (ball.collides_with(court[2])) {
           scores[0]++;
-          state = scores[0] >= 10 ? state_game_over : state_serving_left;
+          state = scores[0] >= 5 ? state_game_over : state_serving_left;
         } else if (ball.collides_with(court[3])) {
           scores[1]++;
-          state = scores[1] >= 10 ? state_game_over : state_serving_right;
+          state = scores[1] >= 5 ? state_game_over : state_serving_right;
         }
         
         ////////////////////ADDED CODE////////////////////
         
         for (int i =0; i<powerUpArraySize;i++){
-          if(ball.collides_with(*powerUps[i])){
+          if(ball.collides_with(*powerUps[i]) && powerUps[i]->isPowerUpVisible() == true){
             ball_velocity_x = powerUps[i]->effect(ball_velocity_x);
             ball_velocity_y = powerUps[i]->effect(ball_velocity_y);
-            powerUps[i]->translate(10,10);
+            powerUps[i]->setPowerUpVisible(false);
           }
         }
 
@@ -351,7 +354,7 @@ namespace octet {
         if (is_key_down('R')){
           scores[0] = scores[1] = 0;
           
-          srand ((unsigned int)time(NULL));
+          //srand ((unsigned int)time(NULL));
           left_or_right = rand()%2;
           
           if (left_or_right == true){
@@ -361,6 +364,16 @@ namespace octet {
             state = state_serving_right;
           }
           scores[0] = scores[1] = 0;
+          
+          //resize our top and bottom bats
+          bat[2].scale(topScaleValue,0);
+          bat[3].scale(bottomScaleValue,0);
+          
+          //remove all powerUps from the board
+          for (int i =0; i<powerUpArraySize;i++){
+            powerUps[i]->setPowerUpVisible(false);
+          }
+          
         }
       }
       
@@ -375,6 +388,9 @@ namespace octet {
     
     // this is called once OpenGL is initialized
     void app_init() {
+      
+      srand ((unsigned int)time(NULL));
+      
       color_shader_.init();
       cameraToWorld.loadIdentity();
       cameraToWorld.translate(0, 0, 5);
@@ -385,8 +401,8 @@ namespace octet {
       
       ///////////////////////ADDED CODE///////////////////////
       
-      bat[2].init(vec4(1, 0, 0, 1), 0, 3.5f, 3.0f, 0.2f);
-      bat[3].init(vec4(0, 1, 0, 1), 0, -3.5f, 3.0f, 0.2f);
+      bat[2].init(vec4(1, 0, 0, 1), 0, 3.5f, 4.0f, 0.2f);
+      bat[3].init(vec4(0, 1, 0, 1), 0, -3.5f, 4.0f, 0.2f);
       
       ///////////////////////ADDED CODE///////////////////////
       
@@ -397,11 +413,6 @@ namespace octet {
       
       ///////////////////////ADDED CODE///////////////////////
       
-      for (int i =0; i<powerUpArraySize;i++){
-        powerUps[i]->init(vec4(1, 0, i, 1), 0.25+i*2, 0.25+i*2, 0.8f, 0.8f);
-      }
-      
-      srand ((unsigned int)time(NULL));
       left_or_right = rand()%2;
       
       if (left_or_right == true){
@@ -435,7 +446,8 @@ namespace octet {
       ///////////////////////ADDED CODE///////////////////////
       
       for (int i =0; i<powerUpArraySize;i++){
-        powerUps[i]->render(color_shader_, cameraToWorld);
+        if(powerUps[i]->isPowerUpVisible() == true)powerUps[i]->render(color_shader_, cameraToWorld);
+        else powerUps[i]->init(vec4(1, 0, i, 1),((rand() % 6)-3)+ i, ((rand() % 4)-2)+ i, 0.8f, 0.8f);
       }
       
       ///////////////////////ADDED CODE///////////////////////
