@@ -9,6 +9,7 @@
 namespace octet {
   
   class box_4 {
+  protected:
     // where is our box (overkill for a ping game!)
     mat4t modelToWorld;
     
@@ -64,6 +65,24 @@ namespace octet {
     void translate(float x, float y) {
       modelToWorld.translate(x, y, 0);
     }
+    
+    ////////////////////ADDED CODE////////////////////
+    
+    //super basic scaling (increase,decrease width and height)
+    void scale(float w, float h){
+      halfWidth += w;
+      halfHeight += h;
+    }
+    
+    //funtions used to get the width and height of a box, used for checking wether to render a bat or not
+    float getWidth(){
+      return halfWidth;
+    }
+    
+    float getHeight(){
+      return halfHeight;
+    }
+    ////////////////////ADDED CODE////////////////////
     
     // position the object relative to another.
     void set_relative(box_4 &rhs, float x, float y) {
@@ -290,11 +309,13 @@ namespace octet {
         
         ////////////////////ADDED CODE////////////////////
         
-        //check collision with bats on top and bottom
-        if (ball_velocity_y > 0 && ball.collides_with(bat[2])) {
+        //check collision with bats on top and bottom as long as they exist
+        if (ball_velocity_y > 0 && ball.collides_with(bat[2]) && bat[2].getWidth() > 0) {
             ball_velocity_y = -ball_velocity_y;
-        } else if (ball_velocity_y < 0 && ball.collides_with(bat[3])) {
+            bat[2].scale(-0.5,0);
+        } else if (ball_velocity_y < 0 && ball.collides_with(bat[3]) && bat[3].getWidth() > 0) {
             ball_velocity_y = -ball_velocity_y;
+            bat[3].scale(-0.5,0);
         }
         
         ////////////////////ADDED CODE////////////////////
@@ -363,8 +384,10 @@ namespace octet {
       bat[1].init(vec4(0, 0, 1, 1),  4.5f, 0, 0.2f, 1.5f);
       
       ///////////////////////ADDED CODE///////////////////////
+      
       bat[2].init(vec4(1, 0, 0, 1), 0, 3.5f, 3.0f, 0.2f);
       bat[3].init(vec4(0, 1, 0, 1), 0, -3.5f, 3.0f, 0.2f);
+      
       ///////////////////////ADDED CODE///////////////////////
       
       court[0].init(vec4(1, 1, 1, 1), 0, -4, 10, 0.2f);
@@ -373,6 +396,7 @@ namespace octet {
       court[3].init(vec4(1, 1, 1, 1), 5,  0, 0.4f, 8);
       
       ///////////////////////ADDED CODE///////////////////////
+      
       for (int i =0; i<powerUpArraySize;i++){
         powerUps[i]->init(vec4(1, 0, i, 1), 0.25+i*2, 0.25+i*2, 0.8f, 0.8f);
       }
@@ -387,6 +411,7 @@ namespace octet {
       state = state_serving_right;
       }
       scores[0] = scores[1] = 0;
+      
       ///////////////////////ADDED CODE///////////////////////
     }
     
@@ -408,14 +433,17 @@ namespace octet {
       ball.render(color_shader_, cameraToWorld);
       
       ///////////////////////ADDED CODE///////////////////////
+      
       for (int i =0; i<powerUpArraySize;i++){
         powerUps[i]->render(color_shader_, cameraToWorld);
       }
+      
       ///////////////////////ADDED CODE///////////////////////
       
       // draw the bats
       for (int i = 0; i != 4; ++i) {
-        bat[i].render(color_shader_, cameraToWorld);
+      //added check to only render the bat if it has a defined width (used for bats that can shrink)
+        if(bat[i].getWidth() > 0) bat[i].render(color_shader_, cameraToWorld);
       }
       
       // draw the court
