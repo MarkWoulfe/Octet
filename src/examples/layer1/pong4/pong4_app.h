@@ -107,29 +107,35 @@ namespace octet {
   
   ////////////////////ADDED CODE////////////////////
   
+  //powerUp class derived from box
   class powerUp : public box_4{
   protected:
+    //a boolean used to show if the powerup should be displayed or not
     bool powerUpVisible = false;
   public:
     powerUp(){
     }
     
+    //a function to access the boolean value powerUpVisible
     bool isPowerUpVisible(){
       return powerUpVisible;
     }
     
+    //a function to set the boolean
     bool setPowerUpVisible(bool yes){
       if(yes)powerUpVisible = true;
       else powerUpVisible = false;
       return powerUpVisible;
     }
     
+    //a virtual float called effect which will be used in the child classes
     virtual float effect(float effect){
       return effect;
     }
     
   };
   
+  //a power up to increase the velocity of the ball
   class speedPowerUp : public powerUp{
   public:
     speedPowerUp(){
@@ -144,6 +150,7 @@ namespace octet {
     
   };
   
+  //a power up to decrease the velocity of the ball
   class speedDownPowerUp : public powerUp{
   public:
     speedDownPowerUp(){
@@ -185,6 +192,7 @@ namespace octet {
     
     ////////////////////ADDED CODE////////////////////
     
+    //creating two pointers to powerups speedUp and Down respectively and adding them into an array
     static const int powerUpArraySize = 2;
     
     speedPowerUp * speedUp = new speedPowerUp;
@@ -212,7 +220,7 @@ namespace octet {
     float topScaleValue = 0.f;
     float bottomScaleValue = 0.f;
     
-    //boolean for enemy movement
+    //boolean for AI bat movement
     bool move_right = true;
     bool move_left = true;
     bool left_or_right;
@@ -305,6 +313,8 @@ namespace octet {
         ////////////////////ADDED CODE////////////////////
         
         //check collision with bats on top and bottom as long as they exist
+        //and if the corresponding power up is not visible then set it to be visible and shrink the bat
+        //otherwise keep the bat the same size
         if (ball_velocity_y > 0 && ball.collides_with(bat[2]) && bat[2].getWidth() > 0) {
             ball_velocity_y = -ball_velocity_y;
           if(powerUps[0]->isPowerUpVisible() == false){
@@ -341,6 +351,8 @@ namespace octet {
         
         ////////////////////ADDED CODE////////////////////
         
+        //loop through our powerups and if the ball collides with them and they are visible
+        //do their effect then make them invisible again
         for (int i =0; i<powerUpArraySize;i++){
           if(ball.collides_with(*powerUps[i]) && powerUps[i]->isPowerUpVisible() == true){
             ball_velocity_x = powerUps[i]->effect(ball_velocity_x);
@@ -352,9 +364,11 @@ namespace octet {
         //adding in code for when the game finishes
       } else if (state == state_game_over){
         if (is_key_down('R')){
+          
+          //reset the scores
           scores[0] = scores[1] = 0;
           
-          //srand ((unsigned int)time(NULL));
+          //randomize which bat starts with the ball
           left_or_right = rand()%2;
           
           if (left_or_right == true){
@@ -363,7 +377,6 @@ namespace octet {
           else {
             state = state_serving_right;
           }
-          scores[0] = scores[1] = 0;
           
           //resize our top and bottom bats
           bat[2].scale(topScaleValue,0);
@@ -413,6 +426,8 @@ namespace octet {
       
       ///////////////////////ADDED CODE///////////////////////
       
+      //much like the reset code have the starting bat be random
+      
       left_or_right = rand()%2;
       
       if (left_or_right == true){
@@ -445,6 +460,8 @@ namespace octet {
       
       ///////////////////////ADDED CODE///////////////////////
       
+      //loop through our powerups, if they are visible then render them, if they are not then
+      //initialise them in a new random spot for when they become visible again
       for (int i =0; i<powerUpArraySize;i++){
         if(powerUps[i]->isPowerUpVisible() == true)powerUps[i]->render(color_shader_, cameraToWorld);
         else powerUps[i]->init(vec4(1, 0, i, 1),((rand() % 6)-3)+ i, ((rand() % 4)-2)+ i, 0.8f, 0.8f);
