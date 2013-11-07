@@ -26,7 +26,7 @@ namespace octet {
     box_4() {
     }
     
-    void init(const vec4 &_color, float x, float y, float w, float h) {
+    virtual void init(const vec4 &_color, float x, float y, float w, float h) {
       modelToWorld.loadIdentity();
       modelToWorld.translate(x, y, 0);
       halfWidth = w * 0.5f;
@@ -34,7 +34,7 @@ namespace octet {
       color = _color;
     }
     
-    void render(color_shader &shader, mat4t &cameraToWorld) {
+    virtual void render(color_shader &shader, mat4t &cameraToWorld) {
       // build a projection matrix: model -> world -> camera -> projection
       // the projection space is the cube -1 <= x/w, y/w, z/w <= 1
       mat4t modelToProjection = mat4t::build_projection_matrix(modelToWorld, cameraToWorld);
@@ -56,6 +56,7 @@ namespace octet {
       // there is no gap between the 3 floats and hence the stride is 3*sizeof(float)
       glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)vertices );
       glEnableVertexAttribArray(attribute_pos);
+      
       
       // finally, draw the box (4 vertices)
       glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -112,8 +113,66 @@ namespace octet {
   protected:
     //a boolean used to show if the powerup should be displayed or not
     bool powerUpVisible = false;
+    
+    // what texture is on our powerUp
+    int texture;
+    
   public:
     powerUp(){
+      texture = 0;
+    }
+    
+    //overriden init and render to use my texture shader instead of the basic color one
+    void init(int _texture, float x, float y, float w, float h) {
+      modelToWorld.loadIdentity();
+      modelToWorld.translate(x, y, 0);
+      halfWidth = w * 0.5f;
+      halfHeight = h * 0.5f;
+      texture = _texture;
+    }
+    
+    void render(texture_shader &shader, mat4t &cameraToWorld) {
+    
+      mat4t modelToProjection = mat4t::build_projection_matrix(modelToWorld, cameraToWorld);
+      
+      // set up opengl to draw textured triangles using sampler 0 (GL_TEXTURE0)
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, texture);
+      
+      // use "old skool" rendering
+      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      shader.render(modelToProjection, 0);
+    
+      // this is an array of the positions of the corners of the sprite in 3D
+      // a straight "float" here means this array is being generated here at runtime.
+      float vertices[] = {
+        -halfWidth, -halfHeight, 0,
+        halfWidth, -halfHeight, 0,
+        halfWidth,  halfHeight, 0,
+        -halfWidth,  halfHeight, 0,
+      };
+      
+      glVertexAttribPointer(attribute_pos, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)vertices );
+      glEnableVertexAttribArray(attribute_pos);
+      
+      // this is an array of the positions of the corners of the texture in 2D
+      static const float uvs[] = {
+        0,  0,
+        1,  0,
+        1,  1,
+        0,  1,
+      };
+      
+      // attribute_uv is position in the texture of each corner
+      // each corner (vertex) has 2 floats (x, y)
+      // there is no gap between the 2 floats and hence the stride is 2*sizeof(float)
+      glVertexAttribPointer(attribute_uv, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), (void*)uvs );
+      glEnableVertexAttribArray(attribute_uv);
+      
+      // finally, draw the sprite (4 vertices)
+      glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+      
     }
     
     //a function to access the boolean value powerUpVisible
@@ -175,6 +234,9 @@ namespace octet {
     
     // shader to draw a solid color
     color_shader color_shader_;
+    
+    //shader to draw our texture
+    texture_shader texture_shader_;
     
     // what state is the game in?
     enum state_t {
@@ -405,6 +467,7 @@ namespace octet {
       srand ((unsigned int)time(NULL));
       
       color_shader_.init();
+      texture_shader_.init();
       cameraToWorld.loadIdentity();
       cameraToWorld.translate(0, 0, 5);
       
@@ -462,9 +525,14 @@ namespace octet {
       
       //loop through our powerups, if they are visible then render them, if they are not then
       //initialise them in a new random spot for when they become visible again
+      
+      GLuint powerUp1 = resources::get_texture_handle(GL_RGBA, "assets/pong4/speedUp.gif");
+      GLuint powerUp2 = resources::get_texture_handle(GL_RGBA, "assets/pong4/speedDown.gif");
+      
       for (int i =0; i<powerUpArraySize;i++){
-        if(powerUps[i]->isPowerUpVisible() == true)powerUps[i]->render(color_shader_, cameraToWorld);
-        else powerUps[i]->init(vec4(1, 0, i, 1),((rand() % 6)-3)+ i, ((rand() % 4)-2)+ i, 0.8f, 0.8f);
+        if(powerUps[i]->isPowerUpVisible() == true)powerUps[i]->render(texture_shader_, cameraToWorld);
+        else if (i==0) powerUps[i]->init(powerUp1,((rand() % 6)-3)+ i, ((rand() % 4)-2)+ i, 0.64f, 0.64f);
+        else powerUps[i]->init(powerUp2,((rand() % 6)-3)+ i, ((rand() % 4)-2)+ i, 0.64f, 0.64f);
       }
       
       ///////////////////////ADDED CODE///////////////////////
