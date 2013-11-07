@@ -8,23 +8,6 @@
 
 namespace octet {
   
-  class powerUp{
-  protected:
-    //private varaibales to only be used by this and child classes
-  public:
-    powerUp();
-  };
-  
-  class speedPowerUp : public powerUp{
-  public:
-    speedPowerUp();
-  };
-
-  class sizePowerUp : public powerUp{
-  public:
-    sizePowerUp();
-  };
-  
   class box_4 {
     // where is our box (overkill for a ping game!)
     mat4t modelToWorld;
@@ -103,7 +86,79 @@ namespace octet {
     }
   };
   
+  ////////////////////ADDED CODE////////////////////
+  
+  class powerUp : public box_4{
+  protected:
+    //private varaibales to only be used by this and child classes
+  public:
+    powerUp(){
+    }
+    
+    virtual float effect(float effect){
+      return effect;
+    }
+    
+    virtual ~powerUp(){
+      
+    }
+    
+  };
+  
+  class speedPowerUp : public powerUp{
+  public:
+    speedPowerUp(){
+    }
+    
+    float effect(float velocity){
+      
+      float increasedVelocity = velocity*1.5;
+      
+      return increasedVelocity;
+    }
+    
+    virtual ~speedPowerUp(){
+      
+    }
+    
+  };
+  
+  class speedDownPowerUp : public powerUp{
+  public:
+    speedDownPowerUp(){
+    }
+    
+    float effect(float velocity){
+      
+      float decreasedVelocity = velocity*0.5;
+      
+      return decreasedVelocity;
+    }
+    
+    virtual ~speedDownPowerUp(){
+      
+    }
+    
+  };
+  
+  ////////////////////ADDED CODE////////////////////
+  
+  /*class sizePowerUp : public powerUp{
+  public:
+    sizePowerUp(){
+    }
+    
+    float effect(float size){
+    
+      float sizeIncreased = size*1.5;
+      
+      return sizeIncreased;
+    }
+    
+  };*/
+  
   class pong4_app : public octet::app {
+    
     // Matrix to transform points in our camera space to the world.
     // This lets us move our camera
     mat4t cameraToWorld;
@@ -124,6 +179,13 @@ namespace octet {
     int scores[2];
     
     // game objects
+    
+    static const int powerUpArraySize = 2;
+    
+    speedPowerUp * speedUp = new speedPowerUp;
+    speedDownPowerUp * speedDown = new speedDownPowerUp;
+    
+    powerUp * powerUps[powerUpArraySize] = {speedUp, speedDown};
     
     // court components
     box_4 court[4];
@@ -162,7 +224,7 @@ namespace octet {
       
       ///////////////////////ADDED CODE///////////////////////
       
-      //wall collision detection and bat coliision detection to change bats direction
+      //wall collision detection and bat collision detection to change bats direction
                                
       if(bat[2].collides_with(court[3]) || bat[2].collides_with(bat[1])){
         move_right = false;
@@ -192,7 +254,6 @@ namespace octet {
         bat[3].translate(+0.1f,0);
       }
       
-      
       if (state == state_serving_left) {
         // if we are serving, glue the ball to the left bat
         ball.set_relative(bat[0], 0.3f, 0);
@@ -211,6 +272,9 @@ namespace octet {
           ball_velocity_x = -0.10f;
           ball_velocity_y = 0.10f;
         }
+        
+      ////////////////////ADDED CODE////////////////////
+        
       } else if (state == state_playing) {
         
         // if we are playing, move the ball
@@ -226,14 +290,14 @@ namespace octet {
         
         ////////////////////ADDED CODE////////////////////
         
-        
         //check collision with bats on top and bottom
         if (ball_velocity_y > 0 && ball.collides_with(bat[2])) {
-          ball_velocity_y = -ball_velocity_y*2;
+            ball_velocity_y = -ball_velocity_y;
         } else if (ball_velocity_y < 0 && ball.collides_with(bat[3])) {
-          ball_velocity_y = -ball_velocity_y/2;
+            ball_velocity_y = -ball_velocity_y;
         }
         
+        ////////////////////ADDED CODE////////////////////
         
         // check collision with the court top and bottom
         if (ball_velocity_y > 0 && ball.collides_with(court[1])) {
@@ -250,7 +314,17 @@ namespace octet {
           scores[1]++;
           state = scores[1] >= 10 ? state_game_over : state_serving_right;
         }
-        ///////////////////////ADDED CODE///////////////////////
+        
+        ////////////////////ADDED CODE////////////////////
+        
+        for (int i =0; i<powerUpArraySize;i++){
+          if(ball.collides_with(*powerUps[i])){
+            ball_velocity_x = powerUps[i]->effect(ball_velocity_x);
+            ball_velocity_y = powerUps[i]->effect(ball_velocity_y);
+            powerUps[i]->translate(10,10);
+          }
+        }
+
         //adding in code for when the game finishes
       } else if (state == state_game_over){
         if (is_key_down('R')){
@@ -268,6 +342,8 @@ namespace octet {
           scores[0] = scores[1] = 0;
         }
       }
+      
+      ////////////////////ADDED CODE////////////////////
     }
     
   public:
@@ -285,14 +361,22 @@ namespace octet {
       ball.init(vec4(1, 1, 1, 1), 0, 0, 0.25f, 0.25f);
       bat[0].init(vec4(1, 1, 0, 1), -4.5f, 0, 0.2f, 1.5f);
       bat[1].init(vec4(0, 0, 1, 1),  4.5f, 0, 0.2f, 1.5f);
+      
+      ///////////////////////ADDED CODE///////////////////////
       bat[2].init(vec4(1, 0, 0, 1), 0, 3.5f, 3.0f, 0.2f);
       bat[3].init(vec4(0, 1, 0, 1), 0, -3.5f, 3.0f, 0.2f);
+      ///////////////////////ADDED CODE///////////////////////
+      
       court[0].init(vec4(1, 1, 1, 1), 0, -4, 10, 0.2f);
       court[1].init(vec4(1, 1, 1, 1), 0,  4, 10, 0.2f);
       court[2].init(vec4(1, 1, 1, 1), -5, 0, 0.4f, 8);
       court[3].init(vec4(1, 1, 1, 1), 5,  0, 0.4f, 8);
       
       ///////////////////////ADDED CODE///////////////////////
+      for (int i =0; i<powerUpArraySize;i++){
+        powerUps[i]->init(vec4(1, 0, i, 1), 0.25+i*2, 0.25+i*2, 0.8f, 0.8f);
+      }
+      
       srand ((unsigned int)time(NULL));
       left_or_right = rand()%2;
       
@@ -303,6 +387,7 @@ namespace octet {
       state = state_serving_right;
       }
       scores[0] = scores[1] = 0;
+      ///////////////////////ADDED CODE///////////////////////
     }
     
     // this is called to draw the world
@@ -321,6 +406,12 @@ namespace octet {
       
       // draw the ball
       ball.render(color_shader_, cameraToWorld);
+      
+      ///////////////////////ADDED CODE///////////////////////
+      for (int i =0; i<powerUpArraySize;i++){
+        powerUps[i]->render(color_shader_, cameraToWorld);
+      }
+      ///////////////////////ADDED CODE///////////////////////
       
       // draw the bats
       for (int i = 0; i != 4; ++i) {
