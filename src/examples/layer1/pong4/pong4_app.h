@@ -26,6 +26,7 @@ namespace octet {
     box_4() {
     }
     
+    //made virtual as i will override it later
     virtual void init(const vec4 &_color, float x, float y, float w, float h) {
       modelToWorld.loadIdentity();
       modelToWorld.translate(x, y, 0);
@@ -34,6 +35,7 @@ namespace octet {
       color = _color;
     }
     
+    //same as above
     virtual void render(color_shader &shader, mat4t &cameraToWorld) {
       // build a projection matrix: model -> world -> camera -> projection
       // the projection space is the cube -1 <= x/w, y/w, z/w <= 1
@@ -122,7 +124,7 @@ namespace octet {
       texture = 0;
     }
     
-    //overriden init and render to use my texture shader instead of the basic color one
+    //overriden init and render to use the texture shader instead of the basic color one
     void init(int _texture, float x, float y, float w, float h) {
       modelToWorld.loadIdentity();
       modelToWorld.translate(x, y, 0);
@@ -264,6 +266,9 @@ namespace octet {
     
     ////////////////////ADDED CODE////////////////////
     
+    //display the scores
+    box_4 scoreDisplay[2];
+    
     // court components
     box_4 court[4];
     
@@ -278,9 +283,12 @@ namespace octet {
     float ball_velocity_y;
     
     ////////////////////ADDED CODE////////////////////
+    
     //code for keeping track of how much the bats have shrunk
     float topScaleValue = 0.f;
     float bottomScaleValue = 0.f;
+    float leftScore = 0.f;
+    float rightScore = 0.f;
     
     //boolean for AI bat movement
     bool move_right = true;
@@ -338,6 +346,8 @@ namespace octet {
         bat[3].translate(+0.1f,0);
       }
       
+      ////////////////////ADDED CODE////////////////////
+      
       if (state == state_serving_left) {
         // if we are serving, glue the ball to the left bat
         ball.set_relative(bat[0], 0.3f, 0);
@@ -356,8 +366,6 @@ namespace octet {
           ball_velocity_x = -0.10f;
           ball_velocity_y = 0.10f;
         }
-        
-        ////////////////////ADDED CODE////////////////////
         
       } else if (state == state_playing) {
         
@@ -402,16 +410,18 @@ namespace octet {
           ball_velocity_y = -ball_velocity_y;
         }
         
-        // check collision with the court end zones
+        ////////////////////ADDED CODE////////////////////
+        
+        // check collision with the court end zones, change the score and player score/health accordingly
         if (ball.collides_with(court[2])) {
           scores[0]++;
+          if(scoreDisplay[0].getWidth() > 0)scoreDisplay[0].scale(-(scores[0]*0.25),0); leftScore += scores[0]*0.25;
           state = scores[0] >= 5 ? state_game_over : state_serving_left;
         } else if (ball.collides_with(court[3])) {
           scores[1]++;
+          if(scoreDisplay[1].getWidth() > 0)scoreDisplay[1].scale(-(scores[1]*0.25),0); rightScore += scores[1]*0.25;
           state = scores[1] >= 5 ? state_game_over : state_serving_right;
         }
-        
-        ////////////////////ADDED CODE////////////////////
         
         //loop through our powerups and if the ball collides with them and they are visible
         //do their effect then make them invisible again
@@ -442,7 +452,13 @@ namespace octet {
           
           //resize our top and bottom bats
           bat[2].scale(topScaleValue,0);
+          topScaleValue = 0;
           bat[3].scale(bottomScaleValue,0);
+          bottomScaleValue = 0;
+          
+          //reset score bars
+          scoreDisplay[0].init(vec4(1,1,0,1), -2.5, 4.5f, 5, 0.3f);
+          scoreDisplay[1].init(vec4(0,0,1,1), 2.5, 4.5f, 5, 0.3f);
           
           //remove all powerUps from the board
           for (int i =0; i<powerUpArraySize;i++){
@@ -477,6 +493,7 @@ namespace octet {
       
       ///////////////////////ADDED CODE///////////////////////
       
+      //add the new AI bats to the top and bottom
       bat[2].init(vec4(1, 0, 0, 1), 0, 3.5f, 4.0f, 0.2f);
       bat[3].init(vec4(0, 1, 0, 1), 0, -3.5f, 4.0f, 0.2f);
       
@@ -488,6 +505,10 @@ namespace octet {
       court[3].init(vec4(1, 1, 1, 1), 5,  0, 0.4f, 8);
       
       ///////////////////////ADDED CODE///////////////////////
+      
+      //display the score/health bars (coloured based on the player bat)
+      scoreDisplay[0].init(vec4(1,1,0,1), -2.5, 4.5f, 5, 0.3f);
+      scoreDisplay[1].init(vec4(0,0,1,1), 2.5, 4.5f, 5, 0.3f);
       
       //much like the reset code have the starting bat be random
       
@@ -525,9 +546,9 @@ namespace octet {
       
       //loop through our powerups, if they are visible then render them, if they are not then
       //initialise them in a new random spot for when they become visible again
-      
-      GLuint powerUp1 = resources::get_texture_handle(GL_RGBA, "assets/pong4/speedUp.gif");
-      GLuint powerUp2 = resources::get_texture_handle(GL_RGBA, "assets/pong4/speedDown.gif");
+      //full path purely for running the exec file from the desktop
+      GLuint powerUp1 = resources::get_texture_handle(GL_RGBA, "/Users/Woulfe/Desktop/octet-11-10-2013/assets/pong4/speedUp.gif");
+      GLuint powerUp2 = resources::get_texture_handle(GL_RGBA, "/Users/Woulfe/Desktop/octet-11-10-2013/assets/pong4/speedDown.gif");
       
       for (int i =0; i<powerUpArraySize;i++){
         if(powerUps[i]->isPowerUpVisible() == true)powerUps[i]->render(texture_shader_, cameraToWorld);
@@ -547,6 +568,12 @@ namespace octet {
       for (int i = 0; i != 4; ++i) {
         court[i].render(color_shader_, cameraToWorld);
       }
+      
+      //draw the scores
+      for (int i=0; i !=2 ; ++i){
+        scoreDisplay[i].render(color_shader_, cameraToWorld);
+      }
+      
     }
   };
 }

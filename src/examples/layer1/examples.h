@@ -35,12 +35,12 @@ namespace octet {
   }
 
   inline void run_examples(int argc, char **argv) {
-    app_utils::prefix("../");
+    //app_utils::prefix("../");
     app::init_all(argc, argv);
 
     if (argc == 1) {
       printf("running triangle... Why not try texture, gif, ping, cube, duck, bump or physics?\n");
-      app *myapp = app_factory("triangle", argc, argv);
+      app *myapp = app_factory("pong", argc, argv);
       // if you can't edit the debug arguments,
       // change the string above to another of the examples.
       myapp->init();
